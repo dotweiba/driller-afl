@@ -62,6 +62,8 @@
 /* Lots of globals, but mostly for the status UI and other things where it
    really makes no sense to haul them around as function parameters. */
 
+static u8 is_first_crash = 0;
+
 static u8 *in_dir,                    /* Input directory with test cases  */
           *out_file,                  /* File to fuzz, if any             */
           *out_dir,                   /* Working & output directory       */
@@ -146,6 +148,7 @@ static u64 total_crashes,             /* Total number of crashes          */
            total_execs,               /* Total execve() calls             */
            start_time,                /* Unix start time (ms)             */
            last_path_time,            /* Time for most recent path (ms)   */
+           first_crash_time,          /* TIme for earliest crash(ms)      */
            last_crash_time,           /* Time for most recent crash (ms)  */
            last_hang_time,            /* Time for most recent hang (ms)   */
            queue_cycle,               /* Queue round counter              */
@@ -3043,6 +3046,10 @@ static u8 save_if_interesting(char** argv, void* mem, u32 len, u8 fault) {
       unique_crashes++;
 
       last_crash_time = get_cur_time();
+      if(is_first_crash){
+        first_crash_time = get_cur_time();
+        is_first_crash = 0;
+        }
 
       break;
 
@@ -3187,6 +3194,7 @@ static void write_stats_file(double bitmap_cvg, double eps) {
              "unique_crashes : %llu\n"
              "unique_hangs   : %llu\n"
              "last_path      : %llu\n"
+             "first_crash    : %llu\n"
              "last_crash     : %llu\n"
              "last_hang      : %llu\n"
              "exec_timeout   : %u\n"
@@ -3198,7 +3206,7 @@ static void write_stats_file(double bitmap_cvg, double eps) {
              queued_paths, queued_discovered, queued_imported, max_depth,
              current_entry, pending_favored, pending_not_fuzzed,
              queued_variable, bitmap_cvg, unique_crashes, unique_hangs,
-             last_path_time / 1000, last_crash_time / 1000,
+             last_path_time / 1000, first_crash_time / 1000, last_crash_time / 1000,
              last_hang_time / 1000, exec_tmout, use_banner, orig_cmdline);
              /* ignore errors */
 
